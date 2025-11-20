@@ -95,6 +95,11 @@ def check_npd_vuln(state: angr.SimState, address, write: bool):
     if not address_is_npd_target:
         return
     
+    # MmIsAddressValid will return False for NULL pointers
+    base_address = get_base_address(address)
+    if (base_address in state.globals['tainted_MmIsAddressValid']): 
+        return 
+    
     tmp_state = state.copy()
     tmp_state.solver.add(address == 0)
     if not tmp_state.satisfiable():
