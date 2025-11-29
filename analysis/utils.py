@@ -32,7 +32,6 @@ def tainted_string_pointer(state, string_ptr, kind):
     Checks if a PCHAR or a PWCHAR is tainted
     """
     taint_collection = "tainted_ansi_strings" if kind == "ansi" else "tainted_unicode_strings"
-
     return (not string_ptr.symbolic and tainted_buffer(state.memory.load(string_ptr, 0x10, disable_actions=True, inspect=False))) or tainted_buffer(string_ptr) or str(string_ptr) in state.globals[taint_collection]
 
 def tainted_object_name(state, ObjectName): 
