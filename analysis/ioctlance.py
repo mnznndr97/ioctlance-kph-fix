@@ -32,6 +32,9 @@ logging.config.dictConfig({
 })
 reload(logging)
 
+def fixup_import_symbols(state):
+    globals.star_ps_process_type = fix_object_type_import(state, "PsProcessType", globals.ps_process_type)
+
 def find_ioctl_handler():
     globals.phase = 1
     driver_object_addr = utils.next_base_addr()
@@ -44,6 +47,8 @@ def find_ioctl_handler():
     state.globals['open_section_handles'] = ()
     state.globals['tainted_unicode_strings'] = ()
     state.globals['ioctl_handler'] = 0
+
+    fixup_import_symbols(state)
     
     # Symbolize the data section to find the ioctl handler, but it increases the memory consumption.
     global_var = int(globals.args.global_var, 16)
@@ -188,11 +193,7 @@ def hunting(driver_base_state: angr.SimState, ioctl_handler_addr):
         ("MajorFunction", 8), ("MinorFunction", 8), ('OutputBufferLength', 32), ('InputBufferLength', 32),
         ('IoControlCode', 32)])
     
-    # Resolve imported symbols addresses in driver memory
-    globals.ps_process_type = utils.resolve_import_symbol_in_object(globals.proj.loader.main_object, "PsProcessType")
-    
-    # Fixup import symbols
-    globals.star_ps_process_type = fix_object_type_import(state, "PsProcessType", globals.ps_process_type)
+    fixup_import_symbols(state)
 
     # Set the initial value of the IRP.
     state.mem[globals.irp_addr].IRP.Tail.Overlay.s.u.CurrentStackLocation = globals.irsp_addr
@@ -487,6 +488,9 @@ def analyze_driver(driver_path):
         globals.basic_info['time'] = {}
         globals.basic_info['memory'] = {}
         globals.basic_info['unique addr'] = {}
+
+        # Resolve imported symbols addresses in driver memory
+        globals.ps_process_type = utils.resolve_import_symbol_in_object(globals.proj.loader.main_object, "PsProcessType")
 
         # Find and return the address of ioctl handler by traversing DriverEntry and monitorirng ioctl handler.
         if globals.args.address:
