@@ -43,6 +43,7 @@ def find_ioctl_handler():
     # Here we cannot use list, or it will be passed by reference.
     state.globals['open_section_handles'] = ()
     state.globals['tainted_unicode_strings'] = ()
+    state.globals['tainted_ansi_strings'] = ()
     state.globals['ioctl_handler'] = 0
     
     # Symbolize the data section to find the ioctl handler, but it increases the memory consumption.
@@ -146,6 +147,7 @@ def hunting(driver_base_state: angr.SimState, ioctl_handler_addr):
         device_object_addr = claripy.BVS('device_object_addr', driver_base_state.arch.bits)
         driver_base_state.globals['open_section_handles'] = ()
         driver_base_state.globals['tainted_unicode_strings'] = ()
+        driver_base_state.globals['tainted_ansi_strings'] = ()
 
         global_var = int(globals.args.global_var, 16)
         if global_var:
@@ -405,7 +407,9 @@ def analyze_driver(driver_path):
     globals.proj.hook_symbol('memmove', hooks.HookMemcpy(cc=globals.mycc))
     globals.proj.hook_symbol('memcpy', hooks.HookMemcpy(cc=globals.mycc))
     globals.proj.hook_symbol('ZwOpenSection', hooks.HookZwOpenSection(cc=globals.mycc))
+    globals.proj.hook_symbol('RtlInitAnsiString', hooks.HookRtlInitAnsiString(cc=globals.mycc))
     globals.proj.hook_symbol('RtlInitUnicodeString', hooks.HookRtlInitUnicodeString(cc=globals.mycc))
+    globals.proj.hook_symbol('RtlAnsiStringToUnicodeString', hooks.HookRtlAnsiStringToUnicodeString(cc=globals.mycc))
     globals.proj.hook_symbol('RtlCopyUnicodeString', hooks.HookRtlCopyUnicodeString(cc=globals.mycc))
     globals.proj.hook_symbol('IoStartPacket', hooks.HookIoStartPacket(cc=globals.mycc))
     globals.proj.hook_symbol('IoCreateDevice', hooks.HookIoCreateDevice(cc=globals.mycc))
@@ -464,6 +468,7 @@ def analyze_driver(driver_path):
     globals.proj.hook_symbol('IoCreateFile', hooks.HookIoCreateFile(cc=globals.mycc))
     globals.proj.hook_symbol('IoCreateFileEx', hooks.HookIoCreateFileEx(cc=globals.mycc))
     globals.proj.hook_symbol('IoCreateFileSpecifyDeviceObjectHint', hooks.HookIoCreateFileSpecifyDeviceObjectHint(cc=globals.mycc))
+    globals.proj.hook_symbol('IoGetDeviceObjectPointer', hooks.HookIoGetDeviceObjectPointer(cc=globals.mycc))
     globals.proj.hook_symbol('ObCloseHandle', hooks.HookObCloseHandle(cc=globals.mycc))
     globals.proj.hook_symbol('KeStackAttachProcess', hooks.HookKeStackAttachProcess(cc=globals.mycc))
 
